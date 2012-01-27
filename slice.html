@@ -2,19 +2,178 @@
 <html>
 <head>
     <meta http-equiv="content-type" content="text/html; charset=utf-8">
-
-    <title>Slice</title>
-    <link rel="stylesheet" href="examples/css/style.css" type="text/css"/>
+    <title>Cut The Shape</title>
+    <link href="css/reset.css" rel="stylesheet" type="text/css" />
+    <link href="css/style.css" rel="stylesheet" type="text/css" />
+    <link href='http://fonts.googleapis.com/css?family=Kaushan+Script' rel='stylesheet' type='text/css'>
     <script type="text/javascript" src="lib/paper.js"></script>
-    <script type="text/paperscript" canvas="mycanvas">
+    <script type="text/paperscript" canvas="mainCanvas">
+        project.currentStyle = { strokeColor: 'grey', }
+            
+        function intersectionPoint(a1, a2, b1, b2) {
+            var ua_t = (b2.x - b1.x) * (a1.y - b1.y) - (b2.y - b1.y) * (a1.x - b1.x);
+            var ub_t = (a2.x - a1.x) * (a1.y - b1.y) - (a2.y - a1.y) * (a1.x - b1.x);
+            var u_b  = (b2.y - b1.y) * (a2.x - a1.x) - (b2.x - b1.x) * (a2.y - a1.y);
+        
+            if ( u_b != 0 ) {
+                var ua = ua_t / u_b;
+                var ub = ub_t / u_b;
+        
+                if ( 0 <= ua && ua <= 1 && 0 <= ub && ub <= 1 ) {
+                    point = new Point();
+                    point.x = a1.x + ua * (a2.x - a1.x);
+                    point.y = a1.y + ua * (a2.y - a1.y);
+                } else {
+                    return null; // Not intersecting
+                }
+            } else {
+                if ( ua_t == 0 || ub_t == 0 ) {
+                    return null; // Coincidental
+                } else {
+                    return null; // Parralel
+                }
+            }
+            return point;
+        }
 
-        var rect = new Rectangle(100, 100, 400, 400);
-        var rectPath = new Path.Rectangle(rect);
-        rectPath.strokeColor = 'black';
+        var cutPath = new Path();
+        var path = new Path();
+        var topLeft = new Point(125, 50),
+            topRight = new Point(375, 50),
+            bottomRight = new Point(375, 300),
+            bottomLeft = new Point(125, 300),
+            rectWidth = topRight.x - topLeft.x,
+            rectHeight = bottomLeft.y - topLeft.y;
 
+        path.add(topLeft, topRight, bottomRight, bottomLeft);
+        path.closed = true;
+        path.fillColor = 'yellow';
+        path.opacity = 0.6;
+
+        function drawDotted (p1, p2) {
+            var linePath = new Path();
+            linePath.strokeWidth = 2;
+            linePath.dashArray = [10, 5];
+            linePath.add(p1, p2);
+            return linePath;
+        }
+
+        function onMouseUp(event) {
+            firstPoint = event.downPoint;
+            secondPoint = event.point;
+
+            var intersectionPointLeftAxis = intersectionPoint(firstPoint, secondPoint, topLeft, bottomLeft);
+            var intersectionPointRightAxis = intersectionPoint(firstPoint, secondPoint, topRight, bottomRight);
+            var intersectionPointTopAxis = intersectionPoint(firstPoint, secondPoint, topLeft, topRight);
+            var intersectionPointBottomAxis = intersectionPoint(firstPoint, secondPoint, bottomLeft, bottomRight);
+
+            if (intersectionPointTopAxis == null) {
+                if(intersectionPointLeftAxis.x == topLeft.x && intersectionPointRightAxis.x == topRight.x) {
+                    var length_first_parallel_side = intersectionPointLeftAxis.y - topLeft.y;
+                    var length_second_parallel_side = intersectionPointRightAxis.y - topLeft.y;
+                    var sum_parallel_sides = length_first_parallel_side+length_second_parallel_side;
+                    var area = (sum_parallel_sides*rectWidth)/2;
+                    var total_area = rectWidth*rectHeight;
+                    var remaining_area = total_area - area;
+                    var percentage_area1 = (area/total_area)*100;
+                    percentage_area1 = Math.round(percentage_area1*100)/100;
+                    var percentage_area2 = (remaining_area/total_area)*100;
+                    percentage_area2 = Math.round(percentage_area2*100)/100;
+                }
+            }
+            else if (intersectionPointLeftAxis == null) {
+                if(intersectionPointTopAxis.y == topLeft.y && intersectionPointBottomAxis.y == bottomLeft.y) {
+                    var length_first_parallel_side = intersectionPointTopAxis.x-topLeft.x;
+                    var length_second_parallel_side = intersectionPointBottomAxis.x - topLeft.x;
+                    var sum_parallel_sides = length_first_parallel_side+length_second_parallel_side;
+                    var area = (sum_parallel_sides*rectHeight)/2;
+                    var total_area = rectWidth*rectHeight;
+                    var remaining_area = total_area -area;
+                    var percentage_area1 = (area/total_area)*100;
+                    percentage_area1 = Math.round(percentage_area1*100)/100;
+                    var percentage_area2 = (remaining_area/total_area)*100;
+                    percentage_area2 = Math.round(percentage_area2*100)/100;
+                }
+            }
+            var dottedLinePath = drawDotted(event.downPoint, event.point);
+
+            if (!intersectionPointBottomAxis && !intersectionPointTopAxis) {
+                split('across', path, intersectionPointRightAxis, intersectionPointLeftAxis);
+
+                var text = new PointText(topLeft + [100, -30]);
+                text.fillColor = 'brown';
+                text.content = percentage_area1;
+
+                var text = new PointText(bottomRight + [-100, 40]);
+                text.fillColor = 'brown';
+                text.content = percentage_area2;
+            } else {
+                split('down', path, intersectionPointTopAxis, intersectionPointBottomAxis);
+
+                var text = new PointText(topLeft + [-70, 200]);
+                text.fillColor = 'brown';
+                text.content = percentage_area1;
+
+                var text = new PointText(bottomRight + [50, -200]);
+                text.fillColor = 'brown';
+                text.content = percentage_area2;
+            }
+
+            var tip = document.getElementById("tip");
+            if(Math.abs(percentage_area2 - percentage_area1) > 10) {
+                tip.innerHTML = 'You have failed. <a href="">Try again</a>';
+            } else {
+                tip.innerHTML = 'You rock! You are a Django! <a href="">Play again</a>';
+            }
+                
+            cutPath.remove();
+            cutPath = new Path();
+            cutPath.fillColor = null;
+        }
+
+        function split(direction, rect, p1, p2) {
+            var first = new Path();
+            var second = new Path();
+            first.closed = true;
+            first.opacity = 0.6;
+            first.fillColor = 'yellow';
+
+            second.closed = true;
+            second.opacity = 0.6;
+            second.fillColor = 'yellow';
+
+            if (direction == 'across') {
+                first.add(topLeft, topRight, p1, p2);
+                second.add(p2, p1, bottomRight, bottomLeft);
+                first.position.y -= 20;
+                second.position.y += 20;
+            } else {
+                first.add(topLeft, p1, p2, bottomLeft);
+                second.add(p1, topRight, bottomRight, p2);
+                first.position.x -= 20;
+                second.position.x += 20;
+            }
+            rect.remove();
+        }
+
+        function onMouseDrag(event) {
+            cutPath.add(event.point);
+        }
+
+        
     </script>
 </head>
 <body>
-    <canvas id="mycanvas" resize></canvas>
+    <div id="wrapper">
+        <div class="slice_count">Slice : 1/2</div>
+        <div class="stage_count"><span class="small">You are in </span> <br/>Stage 2</div>
+        <div class="clear"></div>
+        <div class="drawing_canvas">
+            <canvas id="mainCanvas" width="500" height="350"></canvas>
+        </div>
+         <div class="clear"></div>
+        <div id="tip" class="tip">Try to cut this into two equal pieces :)</div>
+        <div class="eraser"></div>
+    </div>
 </body>
 </html>
