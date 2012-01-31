@@ -2,7 +2,7 @@
 /* CSS Document */
 
 body{ background:url(../images/bg.gif);font-family: 'Kaushan Script', cursive;}
-#wrapper{background:url(../images/background_web.png) center -10px no-repeat; width:1000px; min-height:800px; overflow:hidden; margin:0px auto;}
+#wrapper{background:url(../images/background_web.jpg) center -10px no-repeat; width:1000px; min-height:800px; overflow:hidden; margin:0px auto;}
 .slice_count{width:257px; height:110px; margin:10px 0 0 140px; text-align:center; font-size:28px; line-height:56px; float:left; background:url(../images/slice_count_bg.png) center top no-repeat; padding-top:50px;}
 .stage_count{width:200px; height:50px; margin:10px 90px 0 0; text-align:center; font-size:28px;  float:right;}
 .drawing_canvas{width:450px; height:350px; margin:0px auto; clear:both; margin-top:10px;}
